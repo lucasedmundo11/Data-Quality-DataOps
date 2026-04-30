@@ -1,0 +1,13 @@
+services:
+
+  # VISUALIZADOR DO CLUSTER
+  visualizador:
+    image: dockersamples/visualizer
+    volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+    - 8081:8080
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager

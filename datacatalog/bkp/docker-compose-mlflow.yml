@@ -1,0 +1,62 @@
+services:
+  mlflow:
+    image: docker.io/bitnami/mlflow:latest
+    ports:
+      - "5000:5000"
+    networks:
+      - app_net
+    environment:
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=fiap
+      - AWS_SECRET_ACCESS_KEY=fiap1234
+    command: [
+      "mlflow", "server",
+      "--host", "0.0.0.0",
+      "--port", "5000",
+      "--backend-store-uri", "postgresql://fiap:fiap1234@mlflow_db:5432/mlflow",
+      "--default-artifact-root", "s3://mlflow-artifacts"
+    ]
+
+  mlflow_db:
+    image: docker.io/bitnami/postgresql:latest
+    networks:
+      - app_net
+    environment:
+      - POSTGRESQL_USERNAME=fiap
+      - POSTGRESQL_PASSWORD=fiap1234
+      - POSTGRESQL_DATABASE=mlflow
+    volumes:
+      - pg_data:/bitnami/postgresql
+
+  minio:
+    image: docker.io/bitnami/minio:latest
+    ports:
+      - "9000:9000"
+    networks:
+      - app_net
+    environment:
+      - MINIO_ROOT_USER=fiap
+      - MINIO_ROOT_PASSWORD=fiap1234
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  minio-mc:
+    image: minio/mc:latest
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        mc alias set localminio http://minio:9000 fiap fiap1234;
+        mc mb -p localminio/mlflow-artifacts || echo 'Bucket already exists';
+        mc policy set public localminio/mlflow-artifacts;
+      "
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    external: true
+
+volumes:
+  minio_data:
+  pg_data:

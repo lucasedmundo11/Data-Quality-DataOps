@@ -1,0 +1,14 @@
+services:
+
+  # MLFLOW
+  mlflow:
+    image: bitnami/mlflow:2.22.0
+    ports:
+    - 5000:5000
+    networks:
+      - app_net
+    command: /bin/bash -c "mlflow server --host 0.0.0.0"
+
+networks:
+  app_net:
+    external: true

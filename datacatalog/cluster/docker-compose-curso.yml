@@ -1,0 +1,105 @@
+services:
+
+  # CURSO DATABASE : exemplo MySQL
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: cursomysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+      PMA_USER: admin
+      PMA_PASSWORD: admin
+    ports:
+      - 8082:80  
+    networks:
+      - app_net
+    depends_on: 
+      - cursomysql
+    
+  cursomysql:
+    #image: mysql:9 # bd vazio, sobe mais rapido
+    #image: tonanuvem/mysql:curso_db # bd com a tabela curso
+    image: tonanuvem/mysql:curso_id_logs # bd com a tabela curso, incluida tabela ID e ativados os logs
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: fiap
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3366:3306"
+    networks:
+      - app_net
+    #volumes:
+      #- mysqldata:/var/lib/mysql
+      #- "./mysql/mysql_init_database.sql:/docker-entrypoint-initdb.d/init-database.sql"
+      #- "./mysql/init:/docker-entrypoint-initdb.d" # usar aqui se precisar refazer a imagem com comando = docker commit datacatalog-cursomysql-1 tonanuvem/mysql:curso_id_logs
+      #- "./mysql/mysql.cnf:/etc/mysql/conf.d/mysql.cnf" # usar aqui se precisar refazer a imagem com comando = docker commit datacatalog-cursomysql-1 tonanuvem/mysql:curso_id_logs
+
+# EVENT STREAMING : usando kafka
+
+  zookeeper:
+    image: "confluentinc/cp-zookeeper:5.4.9"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181    
+    ports: 
+      - "2181:2181"
+    networks:
+      - app_net
+
+  kafka:
+    image: "confluentinc/cp-kafka:5.4.9"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_HOST_NAME: "kafka"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_CLEANER_DELETE_RETENTION_MS: 5000
+      KAFKA_BROKER_ID: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1      
+    ports: 
+      - "9092:9092"
+    networks:
+      - app_net
+    depends_on:
+      - zookeeper 
+  
+  # Ferramenta CDC (Change Data Capture)
+  connect:
+    image: "debezium/connect:1.9"
+    environment:
+      GROUP_ID: 1
+      REST_ADVERTISED_HOST_NAME: "connect"
+      BOOTSTRAP_SERVERS: "kafka:9092"
+      ZOOKEEPER_CONNECT: "zookeeper:2181"
+      CONFIG_STORAGE_TOPIC: "cdc_connect_configs"
+      OFFSET_STORAGE_TOPIC: "cdc_connect_offsets" 
+      STATUS_STORAGE_TOPIC: "cdc_connect_statuses"
+    ports:
+      - "8073:8083"
+    networks:
+      - app_net
+    depends_on:
+      - zookeeper
+      - kafka
+
+  # ferramenta visualização Kafka
+  kowl:
+    image: quay.io/cloudhut/kowl:v1.5.0
+    #restart: on-failure
+    hostname: kowl
+    ports:
+    - "8070:8080"
+    networks:
+      - app_net
+    volumes:
+    - ./kowl_config.yaml:/etc/kowl/config.yaml
+    entrypoint: ./kowl --config.filepath=/etc/kowl/config.yaml
+    depends_on:
+      - kafka
+      
+volumes:
+  mysqldata:
+
+networks:
+  app_net:
+    external: true

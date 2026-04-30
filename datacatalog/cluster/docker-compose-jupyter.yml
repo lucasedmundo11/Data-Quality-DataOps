@@ -1,0 +1,17 @@
+services:
+
+  # JUPYTER
+  automl:
+    image: mfeurer/auto-sklearn:master
+    #volumes:
+    #- ${PWD}/ml:/opt/nb
+    ports:
+    - 8789:8888
+    networks:
+      - app_net
+    command: /bin/bash -c "mkdir -p /opt/nb && jupyter notebook --notebook-dir=/opt/nb --ip='0.0.0.0' --port=8888 --no-browser --allow-root"
+    # command: /bin/bash -c "mkdir -p /opt/nb && apt-get update && apt-get install -y wget && wget -P /opt/nb https://raw.githubusercontent.com/tonanuvem/trabalhodataops/refs/heads/main/ml/mlflow.ipynb && jupyter notebook --notebook-dir=/opt/nb --ip='0.0.0.0' --port=8888 --no-browser --allow-root"
+
+networks:
+  app_net:
+    external: true

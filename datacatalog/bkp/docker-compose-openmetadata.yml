@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  openmetadata-server:
+    image: openmetadata/server:latest
+    ports:
+      - "8585:8585"
+    networks:
+      - app_net
+    environment:
+      - OPENMETADATA_SERVER_HOST=0.0.0.0
+      - OPENMETADATA_SERVER_PORT=8585
+      - OPENMETADATA_SERVER_DB_HOST=openmetadata-db
+      - OPENMETADATA_SERVER_DB_PORT=3306
+      - OPENMETADATA_SERVER_DB_USER=root
+      - OPENMETADATA_SERVER_DB_PASSWORD=fiap1234
+      - OPENMETADATA_SERVER_DB_NAME=openmetadata
+      - OPENMETADATA_SERVER_SEARCH_HOST=openmetadata-search
+      - OPENMETADATA_SERVER_SEARCH_PORT=9200
+    depends_on:
+      - openmetadata-db
+      - openmetadata-search
+    volumes:
+      - openmetadata_data:/app/data
+
+  openmetadata-db:
+    image: mysql:8.0
+    networks:
+      - app_net
+    environment:
+      - MYSQL_ROOT_PASSWORD=fiap1234
+      - MYSQL_DATABASE=openmetadata
+    volumes:
+      - openmetadata-db-data:/var/lib/mysql
+
+  openmetadata-search:
+    image: opensearchproject/opensearch:2.7.0
+    networks:
+      - app_net
+    environment:
+      - discovery.type=single-node
+      - cluster.name=openmetadata-cluster
+      - node.name=openmetadata-node
+    volumes:
+      - openmetadata-search-data:/usr/share/opensearch/data
+
+networks:
+  app_net:
+    external: true
+
+volumes:
+  openmetadata_data:
+  openmetadata-db-data:
+  openmetadata-search-data:

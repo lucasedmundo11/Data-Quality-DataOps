@@ -1,0 +1,48 @@
+services:
+
+  # CURSO DATABASE : exemplo MySQL
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: cursomysql
+      PMA_PORT: 3306
+      PMA_ARBITRARY: 1
+      PMA_USER: admin
+      PMA_PASSWORD: admin
+    ports:
+      - 8082:80  
+    networks:
+      - app_net
+    depends_on: 
+      - cursomysql
+    
+  cursomysql:
+    #image: mysql:9 # bd vazio, sobe mais rapido
+    #image: tonanuvem/mysql:curso_db # bd com a tabela curso
+    image: tonanuvem/mysql:curso_id_logs # bd com a tabela curso, incluida tabela ID e ativados os logs
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: fiap
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+    ports:
+      - "3366:3306"
+    networks:
+      - app_net
+    #volumes:
+      #- mysqldata:/var/lib/mysql
+      #- "./mysql/mysql_init_database.sql:/docker-entrypoint-initdb.d/init-database.sql"
+      #- "./mysql/init:/docker-entrypoint-initdb.d" # usar aqui se precisar refazer a imagem com comando = docker commit datacatalog-cursomysql-1 tonanuvem/mysql:curso_id_logs
+      #- "./mysql/mysql.cnf:/etc/mysql/conf.d/mysql.cnf" # usar aqui se precisar refazer a imagem com comando = docker commit datacatalog-cursomysql-1 tonanuvem/mysql:curso_id_logs
+      
+volumes:
+  mysqldata:
+
+networks:
+#  app_net:
+#    external: true
+  app_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.240.0/24"
