@@ -3,6 +3,7 @@ services:
   # JUPYTER
   automl:
     image: mfeurer/auto-sklearn:master
+    platform: linux/amd64
     volumes:
     - ${PWD}/ml:/opt/nb
     ports:
